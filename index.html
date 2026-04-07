@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康守卫 V2 - 焦点融合方案</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --g50: #e8f5e9; --g100: #c8e6c9; --g200: #a5d6a7; --g300: #81c784;
+    --g400: #66bb6a; --g500: #4caf50; --g600: #43a047; --g700: #388e3c; --g800: #2e7d32;
+    --o400: #ffa726; --o50: #fff3e0;
+    --r400: #ef5350; --r50: #ffebee;
+    --b400: #42a5f5; --b700: #1565c0;
+    --p400: #7c4dff; --p50: #ede7f6;
+    --n50: #fafafa; --n100: #f5f5f5; --n200: #eee; --n300: #e0e0e0;
+    --n400: #bdbdbd; --n500: #9e9e9e; --n600: #757575; --n700: #616161;
+    --n800: #424242; --n900: #212121;
+    --R: 14px; --Rs: 10px; --Rl: 20px;
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(160deg, #0f1923 0%, #1a1a2e 50%, #16213e 100%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+
+  /* Phone */
+  .phone { width: 390px; height: 844px; background: #000; border-radius: 50px; padding: 12px; box-shadow: 0 0 0 2px #333, 0 30px 80px rgba(0,0,0,0.6); position: relative; }
+  .screen { width: 100%; height: 100%; background: #fff; border-radius: 40px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+
+  /* Status bar */
+  .sbar { height: 54px; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; color: var(--n900); flex-shrink: 0; z-index: 10; position: relative; }
+
+  /* Scroll */
+  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ===== HERO: Single Focus Area ===== */
+  .hero {
+    min-height: 420px;
+    background: linear-gradient(180deg, #f0fdf0 0%, #fff 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -60px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(76,175,80,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(76,175,80,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* Nav inside hero */
+  .hero-nav {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .hero-date { font-size: 17px; font-weight: 700; color: var(--n800); }
+  .hero-actions { display: flex; gap: 10px; }
+  .hero-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(0,0,0,0.04); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .hero-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.08); }
+  .hero-btn svg { width: 20px; height: 20px; color: var(--n600); }
+
+  /* Score ring */
+  .ring-wrap {
+    position: relative;
+    width: 200px; height: 200px;
+    margin-bottom: 20px;
+    z-index: 2;
+  }
+  .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: rgba(76,175,80,0.1); stroke-width: 10; }
+  .ring-fg {
+    fill: none; stroke: url(#heroGrad); stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 565; stroke-dashoffset: 565;
+    transition: stroke-dashoffset 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 0 8px rgba(76,175,80,0.3));
+  }
+  .ring-fg.go { stroke-dashoffset: 118; }
+  .ring-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-score {
+    font-size: 64px; font-weight: 800; color: var(--n900);
+    line-height: 1; letter-spacing: -4px;
+  }
+  .ring-label {
+    font-size: 13px; color: var(--n500); margin-top: 4px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* Pillars compact */
+  .pillars {
+    display: flex; gap: 24px; margin-bottom: 20px;
+    z-index: 2; position: relative;
+  }
+  .pill { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .pill-dots { display: flex; gap: 3px; }
+  .pill-d {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--n200); transition: 0.3s;
+  }
+  .pill-d.on { background: var(--g500); }
+  .pill-d.on.warn { background: var(--o400); }
+  .pill-t { font-size: 11px; color: var(--n500); font-weight: 600; }
+
+  /* Focus card - the ONE thing */
+  .focus-card {
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    z-index: 2;
+    position: relative;
+    margin-bottom: 20px;
+    transition: all 0.4s;
+  }
+  .focus-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; margin-bottom: 12px;
+  }
+  .focus-badge.ai { background: linear-gradient(135deg, var(--g500), var(--g700)); color: #fff; }
+  .focus-badge.alert { background: var(--o50); color: var(--o400); }
+  .focus-badge.done { background: var(--g50); color: var(--g700); }
+
+  .focus-text {
+    font-size: 16px; color: var(--n800); line-height: 1.7;
+    font-weight: 500;
+  }
+  .focus-highlight {
+    color: var(--g700); font-weight: 700;
+  }
+  .focus-cta {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .focus-cta:active { transform: scale(0.98); }
+  .focus-cta.primary {
+    background: linear-gradient(135deg, var(--g500), var(--g800));
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(76,175,80,0.3);
+  }
+  .focus-cta.secondary {
+    background: var(--n100); color: var(--n700);
+  }
+  .focus-cta-row {
+    display: flex; gap: 10px; margin-top: 16px;
+  }
+  .focus-cta-row .focus-cta { margin-top: 0; }
+
+  /* Scroll hint */
+  .scroll-hint {
+    text-align: center;
+    padding: 8px 0 4px;
+    z-index: 2;
+    position: relative;
+  }
+  .scroll-hint-dot {
+    display: inline-block;
+    width: 32px; height: 4px;
+    background: var(--n300); border-radius: 2px;
+  }
+
+  /* ===== Below fold: Detail modules ===== */
+  .details { padding: 16px 20px 110px; }
+
+  .section { margin-bottom: 24px; }
+  .sec-title {
+    font-size: 17px; font-weight: 700; color: var(--n900);
+    margin-bottom: 12px; letter-spacing: -0.3px;
+  }
+
+  /* Actions */
+  .act-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--n100);
+  }
+  .act-item:last-child { border: none; }
+  .act-ck {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--n300); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.3s;
+  }
+  .act-ck.done { background: var(--g500); border-color: var(--g500); }
+  .act-ck svg { width: 12px; height: 12px; }
+  .act-info { flex: 1; }
+  .act-name { font-size: 14px; color: var(--n900); font-weight: 500; }
+  .act-name.fin { color: var(--n400); text-decoration: line-through; }
+  .act-meta { font-size: 12px; color: var(--n500); margin-top: 1px; }
+  .act-go {
+    padding: 7px 16px; border: none; border-radius: 18px;
+    background: linear-gradient(135deg, var(--g500), var(--g700));
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: 0.2s;
+  }
+  .act-go:active { transform: scale(0.95); }
+
+  /* Weekly */
+  .weekly {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px; background: var(--n50); border-radius: var(--Rs);
+    margin-top: 10px;
+  }
+  .wk-label { font-size: 12px; color: var(--n600); font-weight: 500; white-space: nowrap; }
+  .wk-bar { flex: 1; height: 6px; background: var(--n200); border-radius: 3px; overflow: hidden; }
+  .wk-fill { height: 100%; width: 60%; background: linear-gradient(90deg, var(--g400), var(--g700)); border-radius: 3px; transition: width 1s ease; }
+  .wk-count { font-size: 13px; font-weight: 700; color: var(--g700); white-space: nowrap; }
+
+  /* Dimension cards */
+  .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dim {
+    background: #fff; border: 1px solid var(--n100);
+    border-radius: var(--R); padding: 14px;
+    cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+  }
+  .dim:active { transform: scale(0.97); }
+  .dim-ico { font-size: 20px; margin-bottom: 6px; }
+  .dim-lbl { font-size: 11px; color: var(--n500); font-weight: 600; }
+  .dim-val { font-size: 22px; font-weight: 800; color: var(--n900); letter-spacing: -1px; margin: 2px 0; }
+  .dim-sub { font-size: 11px; color: var(--n500); }
+  .dim-tag {
+    display: inline-block; font-size: 10px; padding: 2px 7px;
+    border-radius: 8px; font-weight: 700; margin-top: 6px;
+  }
+  .dim-tag.ok { background: var(--g50); color: var(--g700); }
+  .dim-tag.mid { background: var(--o50); color: var(--o400); }
+
+  /* More data */
+  .more {
+    padding: 12px 14px; background: var(--n50);
+    border-radius: var(--R); cursor: pointer;
+  }
+  .more-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .more-t { font-size: 13px; color: var(--n600); font-weight: 600; }
+  .more-arr { color: var(--n400); transition: transform 0.3s; }
+  .more-arr.flip { transform: rotate(180deg); }
+  .more-items {
+    display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .more-i { font-size: 12px; color: var(--n600); }
+  .more-i b { color: var(--n800); }
+  .more-expand { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+  .more-expand.open { max-height: 180px; }
+  .more-detail {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding-top: 12px;
+  }
+  .more-d {
+    padding: 10px; background: #fff; border-radius: var(--Rs);
+  }
+  .more-d-l { font-size: 11px; color: var(--n500); }
+  .more-d-v { font-size: 17px; font-weight: 800; color: var(--n800); margin-top: 2px; }
+
+  /* Tab bar */
+  .tabs {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 82px; background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--n200);
+    display: flex; padding: 6px 0 26px; z-index: 100;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer;
+  }
+  .tab svg { width: 22px; height: 22px; color: var(--n400); }
+  .tab span { font-size: 10px; font-weight: 600; color: var(--n400); }
+  .tab.on svg { color: var(--g600); }
+  .tab.on span { color: var(--g600); }
+
+  /* ===== Modals ===== */
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s; border-radius: 40px;
+  }
+  .overlay.show { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #fff; border-radius: 24px 24px 0 0;
+    z-index: 201; transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 82%; overflow-y: auto;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet::-webkit-scrollbar { display: none; }
+  .sheet-bar { width: 36px; height: 4px; background: var(--n300); border-radius: 2px; margin: 10px auto 0; }
+  .sheet-body { padding: 16px 22px 36px; }
+  .sheet-title { font-size: 20px; font-weight: 800; color: var(--n900); margin-bottom: 4px; }
+  .sheet-sub { font-size: 13px; color: var(--n500); margin-bottom: 18px; }
+
+  /* Exercise prep */
+  .ex-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--g400), var(--g800));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin: 0 auto 16px;
+    box-shadow: 0 4px 20px rgba(76,175,80,0.3);
+  }
+  .coach {
+    background: linear-gradient(135deg, #f0faf0, #e8f5e9);
+    border-radius: var(--R); padding: 14px 16px;
+    margin-bottom: 18px; position: relative;
+  }
+  .coach::before {
+    content: 'AI 教练';
+    position: absolute; top: -8px; left: 14px;
+    background: linear-gradient(135deg, var(--g500), var(--g700));
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 10px; border-radius: 6px;
+  }
+  .coach p { font-size: 14px; line-height: 1.6; color: var(--n700); padding-top: 4px; }
+  .ex-targets { display: flex; gap: 10px; margin-bottom: 20px; }
+  .ex-t {
+    flex: 1; text-align: center; padding: 12px 8px;
+    background: var(--n50); border-radius: var(--Rs);
+  }
+  .ex-t-v { font-size: 20px; font-weight: 800; color: var(--n900); }
+  .ex-t-l { font-size: 11px; color: var(--n500); margin-top: 2px; }
+  .big-btn {
+    width: 100%; padding: 15px; border: none; border-radius: var(--R);
+    font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .big-btn:active { transform: scale(0.98); }
+  .big-btn.green { background: linear-gradient(135deg, var(--g500), var(--g800)); color: #fff; box-shadow: 0 4px 16px rgba(76,175,80,0.3); }
+  .big-btn.gray { background: var(--n100); color: var(--n700); }
+
+  /* Complete */
+  .comp-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--g400), var(--g800));
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px; font-size: 32px; color: #fff;
+    box-shadow: 0 4px 20px rgba(76,175,80,0.3);
+  }
+  .comp-t { text-align: center; font-size: 22px; font-weight: 800; color: var(--n900); }
+  .comp-s { text-align: center; font-size: 13px; color: var(--n500); margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat {
+    text-align: center; padding: 12px; background: var(--n50); border-radius: var(--Rs);
+  }
+  .stat-v { font-size: 20px; font-weight: 800; color: var(--n900); }
+  .stat-l { font-size: 11px; color: var(--n500); margin-top: 2px; }
+  .score-up {
+    text-align: center; padding: 12px;
+    background: linear-gradient(135deg, #f0faf0, #e8f5e9);
+    border-radius: var(--R); margin-bottom: 18px;
+    font-size: 15px; font-weight: 700; color: var(--g700);
+  }
+
+  /* Sleep detail */
+  .sleep-bars { display: flex; gap: 2px; height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+  .sb { height: 100%; }
+  .sb.aw { background: #ffcdd2; } .sb.lt { background: #90caf9; }
+  .sb.dp { background: #1565c0; } .sb.rm { background: #7c4dff; }
+  .legend { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .lg-i { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--n600); }
+  .lg-d { width: 8px; height: 8px; border-radius: 2px; }
+  .sleep-nums { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .sn {
+    text-align: center; padding: 10px; background: var(--n50); border-radius: var(--Rs);
+  }
+  .sn-v { font-size: 18px; font-weight: 800; color: var(--n900); }
+  .sn-l { font-size: 10px; color: var(--n500); margin-top: 2px; }
+  .insight {
+    background: linear-gradient(135deg, #ede7f6, #e8eaf6);
+    border-radius: var(--R); padding: 14px 16px;
+    margin-bottom: 16px; position: relative;
+  }
+  .insight::before {
+    content: '💡 发现';
+    position: absolute; top: -8px; left: 14px;
+    background: linear-gradient(135deg, #7c4dff, #536dfe);
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 10px; border-radius: 6px;
+  }
+  .insight p { font-size: 13px; line-height: 1.6; color: var(--n700); padding-top: 4px; }
+
+  /* Scene switcher */
+  .scene-switch {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 6px; z-index: 999;
+    background: rgba(0,0,0,0.7); padding: 6px 8px;
+    border-radius: 30px; backdrop-filter: blur(10px);
+  }
+  .scene-btn {
+    padding: 8px 14px; border: none; border-radius: 20px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    color: rgba(255,255,255,0.6); background: transparent;
+    transition: 0.2s; white-space: nowrap;
+  }
+  .scene-btn.active { background: rgba(255,255,255,0.15); color: #fff; }
+  .scene-btn:hover { color: #fff; }
+
+  /* Labels */
+  .lbl {
+    position: fixed; top: 50%; writing-mode: vertical-lr;
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    color: rgba(255,255,255,0.2); letter-spacing: 3px; font-weight: 500;
+  }
+  .lbl-l { left: 24px; transform: translateY(-50%); }
+  .lbl-r { right: 24px; transform: translateY(-50%); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .anim { animation: fadeUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards; opacity: 0; }
+  .d1 { animation-delay: 0.1s; } .d2 { animation-delay: 0.2s; }
+  .d3 { animation-delay: 0.3s; } .d4 { animation-delay: 0.4s; }
+
+  @media (max-width: 440px) {
+    body { padding: 0; }
+    .phone { width: 100%; height: 100vh; border-radius: 0; padding: 0; box-shadow: none; }
+    .screen { border-radius: 0; }
+    .overlay { border-radius: 0; }
+    .lbl { display: none; }
+    .scene-switch { bottom: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lbl lbl-l">XIAOMI HEALTH GUARDIAN</div>
+<div class="lbl lbl-r">焦点融合方案 · V2</div>
+
+<!-- Scene switcher -->
+<div class="scene-switch">
+  <button class="scene-btn active" onclick="switchScene('morning')">☀️ 早上</button>
+  <button class="scene-btn" onclick="switchScene('afternoon')">🕐 下午</button>
+  <button class="scene-btn" onclick="switchScene('postrun')">🏃 运动后</button>
+  <button class="scene-btn" onclick="switchScene('night')">🌙 晚上</button>
+</div>
+
+<div class="phone">
+  <div class="screen">
+    <div class="sbar">
+      <span>9:41</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z" opacity=".3"/><path d="M6.67 14.86L12 21.49l.01.01.01-.01 5.33-6.63C17.06 14.65 15.03 13 12 13s-5.06 1.65-5.33 1.86z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll" id="mainScroll">
+
+      <!-- HERO: Single Focus -->
+      <div class="hero" id="hero">
+        <div class="hero-nav anim d1">
+          <div class="hero-date" id="heroDate">4月2日 周三</div>
+          <div class="hero-actions">
+            <button class="hero-btn" onclick="alert('AI 助手对话即将上线')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button class="hero-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ring-wrap anim d2">
+          <svg class="ring-svg" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#66bb6a"/>
+                <stop offset="100%" style="stop-color:#2e7d32"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="100" cy="100" r="90"/>
+            <circle class="ring-fg" cx="100" cy="100" r="90" id="ring"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-score" id="scoreNum">0</div>
+            <div class="ring-label">今日状态</div>
+          </div>
+        </div>
+
+        <div class="pillars anim d3">
+          <div class="pill"><div class="pill-dots"><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d"></div></div><div class="pill-t">运动</div></div>
+          <div class="pill"><div class="pill-dots"><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d on"></div></div><div class="pill-t">睡眠</div></div>
+          <div class="pill"><div class="pill-dots"><div class="pill-d on warn"></div><div class="pill-d on warn"></div><div class="pill-d"></div><div class="pill-d"></div></div><div class="pill-t">饮食</div></div>
+          <div class="pill"><div class="pill-dots"><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d on"></div><div class="pill-d"></div></div><div class="pill-t">情绪</div></div>
+        </div>
+
+        <!-- Dynamic focus card -->
+        <div class="focus-card anim d4" id="focusCard"></div>
+
+        <div class="scroll-hint">
+          <div class="scroll-hint-dot"></div>
+        </div>
+      </div>
+
+      <!-- Below fold: Detail sections -->
+      <div class="details">
+
+        <!-- Today Actions -->
+        <div class="section">
+          <div class="sec-title">今日行动</div>
+          <div id="actionsList">
+            <div class="act-item">
+              <div class="act-ck done"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div class="act-info"><div class="act-name fin">午后散步 15 分钟</div><div class="act-meta">12:45 完成 · 68 大卡</div></div>
+            </div>
+            <div class="act-item">
+              <div class="act-ck"></div>
+              <div class="act-info"><div class="act-name">慢跑 30 分钟</div><div class="act-meta">计划 17:30 · 中等强度</div></div>
+              <button class="act-go" onclick="openSheet('prep')">开始</button>
+            </div>
+            <div class="act-item">
+              <div class="act-ck"></div>
+              <div class="act-info"><div class="act-name">23:00 前入睡</div><div class="act-meta">早睡的那些天深睡平均多 20 分钟</div></div>
+            </div>
+          </div>
+          <div class="weekly">
+            <div class="wk-label">本周运动</div>
+            <div class="wk-bar"><div class="wk-fill"></div></div>
+            <div class="wk-count">3/5</div>
+          </div>
+        </div>
+
+        <!-- Dimensions -->
+        <div class="section">
+          <div class="sec-title">健康数据</div>
+          <div class="dim-grid">
+            <div class="dim" onclick="openSheet('sleep')">
+              <div class="dim-ico">🌙</div>
+              <div class="dim-lbl">昨晚睡眠</div>
+              <div class="dim-val">7.2h</div>
+              <div class="dim-sub">深睡 64min · 23:15 入睡</div>
+              <div class="dim-tag ok">质量良好</div>
+            </div>
+            <div class="dim">
+              <div class="dim-ico">🏃</div>
+              <div class="dim-lbl">本周运动</div>
+              <div class="dim-val">3 次</div>
+              <div class="dim-sub">消耗 860 大卡</div>
+              <div class="dim-tag ok">进度 60%</div>
+            </div>
+            <div class="dim">
+              <div class="dim-ico">💗</div>
+              <div class="dim-lbl">心率</div>
+              <div class="dim-val">65</div>
+              <div class="dim-sub">静息心率 · bpm</div>
+              <div class="dim-tag ok">范围正常</div>
+            </div>
+            <div class="dim">
+              <div class="dim-ico">😌</div>
+              <div class="dim-lbl">压力</div>
+              <div class="dim-val">中等</div>
+              <div class="dim-sub">今日高压 2.1h</div>
+              <div class="dim-tag mid">注意放松</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- More -->
+        <div class="section">
+          <div class="more" onclick="toggleMore()">
+            <div class="more-row">
+              <div class="more-t">更多健康数据</div>
+              <svg class="more-arr" id="moreArr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="more-items">
+              <div class="more-i">血氧 <b>98%</b></div>
+              <div class="more-i">体温 <b>36.5°</b></div>
+              <div class="more-i">HRV <b>52ms</b></div>
+            </div>
+            <div class="more-expand" id="moreExp">
+              <div class="more-detail">
+                <div class="more-d"><div class="more-d-l">血氧饱和度</div><div class="more-d-v">98%</div></div>
+                <div class="more-d"><div class="more-d-l">体表温度</div><div class="more-d-v">36.5°C</div></div>
+                <div class="more-d"><div class="more-d-l">HRV</div><div class="more-d-v">52ms</div></div>
+                <div class="more-d"><div class="more-d-l">呼吸频率</div><div class="more-d-v">16/min</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>健康</span></button>
+      <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>运动</span></button>
+      <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="6" width="22" height="12" rx="2"/><line x1="7" y1="12" x2="7.01" y2="12"/></svg><span>设备</span></button>
+      <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>我的</span></button>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="ov" onclick="closeSheet()"></div>
+
+    <!-- Exercise Prep Sheet -->
+    <div class="sheet" id="sheetPrep">
+      <div class="sheet-bar"></div>
+      <div class="sheet-body">
+        <div class="ex-icon">🏃</div>
+        <div class="sheet-title" style="text-align:center">今日运动：慢跑</div>
+        <div class="sheet-sub" style="text-align:center">30 分钟 · 中等强度</div>
+        <div class="coach"><p>昨晚睡眠不错，状态适合跑步。建议配速 6'30-7'00，心率保持在 135-150 之间。跑不动了就走，不勉强。</p></div>
+        <div class="ex-targets">
+          <div class="ex-t"><div class="ex-t-v">30<small style="font-size:12px;font-weight:400">min</small></div><div class="ex-t-l">目标时长</div></div>
+          <div class="ex-t"><div class="ex-t-v">3<small style="font-size:12px;font-weight:400">区</small></div><div class="ex-t-l">心率区间</div></div>
+          <div class="ex-t"><div class="ex-t-v">6'45</div><div class="ex-t-l">建议配速</div></div>
+        </div>
+        <button class="big-btn green" onclick="closeSheet();setTimeout(()=>openSheet('done'),300)">开始运动</button>
+      </div>
+    </div>
+
+    <!-- Exercise Done Sheet -->
+    <div class="sheet" id="sheetDone">
+      <div class="sheet-bar"></div>
+      <div class="sheet-body">
+        <div class="comp-icon">✓</div>
+        <div class="comp-t">完成！</div>
+        <div class="comp-s">慢跑 31 分钟 · 4.2 km</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-v">4.2<small style="font-size:12px">km</small></div><div class="stat-l">距离</div></div>
+          <div class="stat"><div class="stat-v">143<small style="font-size:12px">bpm</small></div><div class="stat-l">平均心率</div></div>
+          <div class="stat"><div class="stat-v">298<small style="font-size:12px">大卡</small></div><div class="stat-l">消耗</div></div>
+          <div class="stat"><div class="stat-v">6'52</div><div class="stat-l">配速</div></div>
+        </div>
+        <div class="coach"><p>配速比上次快了 15 秒，心率反而更稳定，心肺在进步。今晚深睡预计会有改善，明早帮你看结果。</p></div>
+        <div class="score-up">状态分：79 → 85（↑6）</div>
+        <button class="big-btn gray" onclick="closeSheet()">返回首页</button>
+      </div>
+    </div>
+
+    <!-- Sleep Sheet -->
+    <div class="sheet" id="sheetSleep">
+      <div class="sheet-bar"></div>
+      <div class="sheet-body">
+        <div class="sheet-title">🌙 昨晚睡眠</div>
+        <div class="sheet-sub">23:15 入睡 · 6:35 醒来 · 7.2 小时</div>
+        <div class="sleep-bars">
+          <div class="sb aw" style="flex:.5"></div><div class="sb lt" style="flex:2"></div>
+          <div class="sb dp" style="flex:1.5"></div><div class="sb lt" style="flex:1"></div>
+          <div class="sb rm" style="flex:1"></div><div class="sb lt" style="flex:1.5"></div>
+          <div class="sb dp" style="flex:1"></div><div class="sb lt" style="flex:.8"></div>
+          <div class="sb rm" style="flex:.7"></div><div class="sb aw" style="flex:.3"></div>
+        </div>
+        <div class="legend">
+          <div class="lg-i"><div class="lg-d" style="background:#ffcdd2"></div>清醒</div>
+          <div class="lg-i"><div class="lg-d" style="background:#90caf9"></div>浅睡</div>
+          <div class="lg-i"><div class="lg-d" style="background:#1565c0"></div>深睡</div>
+          <div class="lg-i"><div class="lg-d" style="background:#7c4dff"></div>REM</div>
+        </div>
+        <div class="sleep-nums">
+          <div class="sn"><div class="sn-v">64<small style="font-size:11px">min</small></div><div class="sn-l">深睡</div></div>
+          <div class="sn"><div class="sn-v">3.8<small style="font-size:11px">h</small></div><div class="sn-l">浅睡</div></div>
+          <div class="sn"><div class="sn-v">1.1<small style="font-size:11px">h</small></div><div class="sn-l">REM</div></div>
+        </div>
+        <div class="coach"><p>深睡 64 分钟，高于均值（52）。昨天下午的跑步对此有帮助。入睡 23:15，比上周平均提前了 40 分钟。</p></div>
+        <div class="insight"><p>你运动日的深睡平均 65 分钟，非运动日平均 44 分钟。运动对你的睡眠影响非常明显。</p></div>
+        <button class="big-btn gray" onclick="closeSheet()">关闭</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Scene configurations
+const scenes = {
+  morning: {
+    score: 79,
+    badge: '<span class="focus-badge ai">AI 建议</span>',
+    text: '昨晚睡得不错，深睡 <span class="focus-highlight">64 分钟</span>，今天状态挺好的。下午安排了一次 <span class="focus-highlight">30 分钟慢跑</span>，对保持你最近的睡眠改善趋势很有帮助。',
+    cta: '<button class="focus-cta primary" onclick="openSheet(\'prep\')">查看今日运动计划</button>',
+    heroGradient: 'linear-gradient(180deg, #f0fdf0 0%, #fff 100%)'
+  },
+  afternoon: {
+    score: 74,
+    badge: '<span class="focus-badge alert">⚡ 需要关注</span>',
+    text: '你已经连续久坐 <span class="focus-highlight">2.5 小时</span>，压力值刚进入"高"区间。起来活动一下，或者花 3 分钟做个呼吸练习，可以帮助缓解。',
+    cta: '<div class="focus-cta-row"><button class="focus-cta primary" style="flex:1" onclick="alert(\'呼吸练习引导启动\')">开始呼吸练习</button><button class="focus-cta secondary" style="flex:1">稍后提醒</button></div>',
+    heroGradient: 'linear-gradient(180deg, #fff8e1 0%, #fff 100%)'
+  },
+  postrun: {
+    score: 85,
+    badge: '<span class="focus-badge done">✓ 运动完成</span>',
+    text: '刚完成 <span class="focus-highlight">31 分钟慢跑</span>，状态分 +6！配速比上次快了 15 秒，心率更稳定，心肺在进步。今晚深睡预计会有改善，明早帮你看结果。',
+    cta: '<button class="focus-cta secondary" onclick="openSheet(\'done\')">查看运动详情</button>',
+    heroGradient: 'linear-gradient(180deg, #e8f5e9 0%, #fff 100%)'
+  },
+  night: {
+    score: 82,
+    badge: '<span class="focus-badge ai">🌙 晚安</span>',
+    text: '今天状态不错，完成了 2 项运动任务。现在最重要的一件事：<span class="focus-highlight">23:00 前入睡</span>。你入睡早的那些天，深睡平均多 20 分钟。别刷手机了。',
+    cta: '<button class="focus-cta primary" onclick="alert(\'助眠模式已开启：灯光调暗、免打扰开启\')">开启助眠模式</button>',
+    heroGradient: 'linear-gradient(180deg, #e8eaf6 0%, #fff 100%)'
+  }
+};
+
+let currentScene = 'morning';
+let scoreAnimId = null;
+
+function switchScene(name) {
+  currentScene = name;
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const s = scenes[name];
+  const hero = document.getElementById('hero');
+  hero.style.background = s.heroGradient;
+
+  // Update focus card
+  const card = document.getElementById('focusCard');
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(12px)';
+  setTimeout(() => {
+    card.innerHTML = s.badge + '<div class="focus-text">' + s.text + '</div>' + s.cta;
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  }, 200);
+
+  // Animate score
+  const current = parseInt(document.getElementById('scoreNum').textContent) || 0;
+  animateScore(current, s.score, 800);
+  updateRing(s.score);
+
+  // Scroll to top
+  document.getElementById('mainScroll').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function animateScore(from, to, dur) {
+  if (scoreAnimId) cancelAnimationFrame(scoreAnimId);
+  const el = document.getElementById('scoreNum');
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * ease);
+    if (p < 1) scoreAnimId = requestAnimationFrame(step);
+  }
+  scoreAnimId = requestAnimationFrame(step);
+}
+
+function updateRing(score) {
+  const ring = document.getElementById('ring');
+  const circumference = 2 * Math.PI * 90;
+  const offset = circumference * (1 - score / 100);
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = offset;
+}
+
+// Sheets
+function openSheet(name) {
+  document.getElementById('ov').classList.add('show');
+  document.getElementById('sheet' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('show');
+}
+function closeSheet() {
+  document.getElementById('ov').classList.remove('show');
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
+}
+
+// More data
+let moreOpen = false;
+function toggleMore() {
+  moreOpen = !moreOpen;
+  document.getElementById('moreExp').classList.toggle('open', moreOpen);
+  document.getElementById('moreArr').classList.toggle('flip', moreOpen);
+}
+
+// Init
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    switchScene('morning');
+    document.getElementById('ring').style.transition = 'stroke-dashoffset 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  }, 400);
+});
+</script>
+
+</body>
+</html>
